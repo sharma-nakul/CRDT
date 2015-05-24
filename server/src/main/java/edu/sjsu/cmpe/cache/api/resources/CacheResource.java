@@ -25,6 +25,15 @@ public class CacheResource {
         this.cache = cache;
     }
 
+
+    @DELETE
+    @Path("{key}")
+    @Timed(name = "del-entry")
+    public Response delete(@PathParam("key") LongParam key) {
+        cache.delete(key.get());
+        return Response.status(204).build();
+    }
+
     @GET
     @Path("{key}")
     @Timed(name = "get-entry")
@@ -46,7 +55,9 @@ public class CacheResource {
         Entry entry = new Entry();
         entry.setKey(key.get());
         entry.setValue(value);
+
         cache.save(entry);
+
         return Response.status(200).build();
     }
 }

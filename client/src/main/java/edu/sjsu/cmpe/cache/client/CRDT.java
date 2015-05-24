@@ -1,144 +1,105 @@
 package edu.sjsu.cmpe.cache.client;
 
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.JsonNode;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.async.Callback;
-import com.mashape.unirest.http.exceptions.UnirestException;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Future;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * POJO class for CRDT
+ */
 public class CRDT {
 
-    private ArrayList<String> servers;
-    int code;
-    public AtomicInteger successCount;
-    public AtomicInteger getCount;
-    Map<String, Integer> map;
+    private final String cacheServerUrl;
+    private final Integer port;
+    private final Integer serviceCount;
+    private final int writeCount;
+    private final int readCount;
+    private AtomicInteger successCount;
+    private AtomicInteger attemptsCount;
+    private String[] values;
+    private AtomicInteger index;
+    private CountDownLatch responseWaiter;
 
-    //Adding servers in the list.
-    public CRDT() {
-        servers = new ArrayList<String>(3);
-        servers.add("http://localhost:3000");
-        servers.add("http://localhost:3001");
-        servers.add("http://localhost:3002");
+
+    public CRDT(String serverUrl, Integer port, Integer serviceCount) {
+        this.cacheServerUrl = serverUrl;
+        this.port = port;
+        this.serviceCount = serviceCount;
+        this.writeCount = 2;
+        this.readCount = 2;
+        this.successCount = new AtomicInteger(0);
+        this.attemptsCount = new AtomicInteger(0);
+        this.values = new String[this.serviceCount];
+        this.index = new AtomicInteger(0);
+        this.responseWaiter = new CountDownLatch(this.serviceCount);
     }
 
-    /*-------------------Performing PUT Operation------------------------------------------*/
-    public int put(long key, String value) {
-        successCount = new AtomicInteger();
-        for (final String serverUrl : servers) {
-            try {
-                Thread.sleep(100);
-                Future<HttpResponse<JsonNode>> future = Unirest.put(serverUrl + "/cache/{key}/{value}")
-                        .header("accept", "application/json")
-                        .routeParam("key", Long.toString(key))
-                        .routeParam("value", value)
-                        .asJsonAsync(new Callback<JsonNode>() {
-                            public void failed(UnirestException e) {
-                                System.out.println("The request has failed for Post =>" + serverUrl);
-                            }
-
-                            public void completed(HttpResponse<JsonNode> response) {
-                                code = response.getStatus();
-                                System.out.println("\nResponse code for PUT => " + code);
-                                if (code == 200) {
-                                    successCount.incrementAndGet();
-                                    System.out.println("PUT request success count => " + successCount);
-                                }
-                            }
-                            public void cancelled() {
-                                System.out.println("The request has been cancelled");
-                            }
-                        });
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-            }
-        }
-        try {
-            Thread.sleep(50);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        }
-        return (int) successCount.floatValue();
+    public String getCacheServerUrl() {
+        return cacheServerUrl;
     }
 
+    public Integer getPort() {
+        return port;
+    }
 
-    /*-------------------Performing GET Operation------------------------------------------*/
-    public Map<String, Integer> get(long key) {
-        getCount = new AtomicInteger();
-        map = new HashMap<String, Integer>();
-        for (final String serverUrl : servers) {
-            try {
-                Thread.sleep(150);
-                // Asynchronous call
-                Future<HttpResponse<JsonNode>> future = Unirest.get(serverUrl + "/cache/{key}")
-                        .header("accept", "application/json")
-                        .routeParam("key", Long.toString(key))
-                        .asJsonAsync(new Callback<JsonNode>() {
+    public Integer getServiceCount() {
+        return serviceCount;
+    }
 
-                            public void failed(UnirestException e) {
-                                System.out.println("The request has failed");
-                            }
+    public int getWriteCount() {
+        return writeCount;
+    }
 
-                            public void completed(HttpResponse<JsonNode> response) {
-                                code = response.getStatus();
-                                //String value = response.getBody().getObject().getString("value");
-                                System.out.println("GET Request completed => Server: " + serverUrl + " & Code: " + code);
-                                if (code == 200) {
-                                    int tempVar = getCount.incrementAndGet();
-                                    map.put(response.getBody().getObject().getString("value"), tempVar);
-                                    System.out.println("GET request success count => " + successCount + " & Map value => " + map.values());
-                                }
-                            }
+    public int getReadCount() {
+        return readCount;
+    }
 
-                            public void cancelled() {
-                                System.out.println("The request has been cancelled");
-                            }
-                        });
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-            }
-        }
-        try {
-            Thread.sleep(50);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        }
-        return map;
+    public AtomicInteger getSuccessCount() {
+        return successCount;
+    }
+
+    public void setSuccessCount(AtomicInteger successCount) {
+        this.successCount = successCount;
+    }
+
+    public AtomicInteger getAttemptsCount() {
+        return attemptsCount;
+    }
+
+    public void setAttemptsCount(AtomicInteger attemptsCount) {
+        this.attemptsCount = attemptsCount;
+    }
+
+    public String[] getValues() {
+        return values;
+    }
+
+    public String getValues(int index) {
+        return values[index];
+    }
+
+    public void setValues(String[] getValues) {
+        this.values = getValues;
+    }
+
+    public void setValues(String values, int index) {
+        this.values[index] = values;
+    }
+
+    public AtomicInteger getIndex() {
+        return index;
+    }
+
+    public void setGetIndex(AtomicInteger getIndex) {
+        this.index = getIndex;
+    }
+
+    public CountDownLatch getResponseWaiter() {
+        return responseWaiter;
+    }
+
+    public void setResponseWaiter(CountDownLatch responseWaiter) {
+        this.responseWaiter = responseWaiter;
     }
 
 
-    /*-------------------Performing DELETE Operation------------------------------------------*/
-    public int delete(long key) {
-        for (final String serverUrl : servers) {
-            Future<HttpResponse<JsonNode>> future = Unirest.delete(serverUrl + "/cache/{key}")
-                    .header("accept", "application/json")
-                    .routeParam("key", Long.toString(key))
-                    .asJsonAsync(new Callback<JsonNode>() {
-                        public void failed(UnirestException e) {
-                            System.out.println("Delete request failed on => " + serverUrl);
-                        }
-
-                        public void completed(HttpResponse<JsonNode> response) {
-                            code = response.getStatus();
-                            //String value = response.getBody().getObject().getString("value");
-                            System.out.println("Delete request completed: Code => " + code);
-                            if (code == 201) {
-                                successCount.incrementAndGet();
-                                System.out.println("DELETE success count => " + successCount);
-                            }
-                        }
-
-                        public void cancelled() {
-                            System.out.println("The request has been cancelled");
-                        }
-                    });
-        }
-        return (int) successCount.floatValue();
-    }
 }

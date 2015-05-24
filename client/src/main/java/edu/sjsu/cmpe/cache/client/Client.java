@@ -1,43 +1,38 @@
 package edu.sjsu.cmpe.cache.client;
 
-import java.util.Map;
+import com.mashape.unirest.http.Unirest;
 
 public class Client {
 
     public static void main(String[] args) throws Exception {
-        CRDT crdtClient = new CRDT();
-        int key = 1;
-        int successCount = crdtClient.put(key, "b");
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        }
-
-
-        // Checking majority of servers for the same value.
-        if (successCount <= 2) {
-            int deletValue = crdtClient.delete(key);
-            System.out.println("Delete Value => " + deletValue + " having key => " + key);
-        }
-
-
+        String serverURL= "http://localhost";
+        int port=3000;
+        int serviceCount=3;
+        CacheServiceInterface cache = new DistributedCacheService(serverURL,port,serviceCount);
         System.out.println("\nStarting Cache Client...");
-        CacheServiceInterface cache = new DistributedCacheService("http://localhost:3000");
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        }
+
+        // Call 1 - First HTTP PUT call to store “a” to key 1.First HTTP PUT call to store “a” to key 1.
+        // Then, sleep for ~30 seconds so that you will have enough time to stop the server A.
+        System.out.println("\nHTTP PUT:  Key{1} => Value{a}");
+        cache.put(1, "a");
+        System.out.println("sleeping for 30 seconds...");
+        Thread.sleep(30000);
 
 
-        Map<String, Integer> getMap = crdtClient.get(key);
-        if (getMap.containsValue(2)) {
-            crdtClient.put(key, "b");
-        }
+        // Call 2 - Second HTTP PUT call to update key 1 value to “b”.
+        // Then, sleep again for another ~30 seconds while bringing the server A back.
+        System.out.println("\nHTTP PUT:  Key{1} => Value{b}");
+        cache.put(1, "b");
+        System.out.println("sleeping for 30 seconds...");
+        Thread.sleep(30000);
 
-        System.out.println("\nValue has been replicated in " + successCount + " servers");
-        System.out.println("\nExisting Cache Client...");
+        // Call 3 - Final HTTP GET call to retrieve key “1” value.
+        System.out.println("\nHTTP GET: Pulling Key{1} from all servers");
+        String value = cache.get(1);
+        System.out.println("\nHTTP GET for Key{1}: Value => " + value);
+
+        System.out.println("\nExiting Cache Client...");
+        Unirest.shutdown();
     }
 
 }

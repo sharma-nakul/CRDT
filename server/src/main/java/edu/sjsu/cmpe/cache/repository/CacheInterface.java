@@ -1,12 +1,12 @@
 package edu.sjsu.cmpe.cache.repository;
 
-import edu.sjsu.cmpe.cache.domain.Entry;
-
 import java.util.List;
+
+import edu.sjsu.cmpe.cache.domain.Entry;
 
 /**
  * Entry repository interface.
- * <p>
+ *
  * What is repository pattern?
  *
  * @see http://martinfowler.com/eaaCatalog/repository.html
@@ -15,7 +15,8 @@ public interface CacheInterface {
     /**
      * Save a new entry in the repository
      *
-     * @param newentry a entry instance to be create in the repository
+     * @param newentry
+     *            a entry instance to be create in the repository
      * @return an entry instance
      */
     Entry save(Entry newEntry);
@@ -23,11 +24,12 @@ public interface CacheInterface {
     /**
      * Retrieve an existing entry by key
      *
-     * @param key a valid key
+     * @param key
+     *            a valid key
      * @return a entry instance
      */
     Entry get(Long key);
-
+    void delete(Long key);
     /**
      * Retrieve all entries
      *

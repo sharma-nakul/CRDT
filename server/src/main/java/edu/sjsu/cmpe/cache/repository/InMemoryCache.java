@@ -1,18 +1,16 @@
 package edu.sjsu.cmpe.cache.repository;
 
-import edu.sjsu.cmpe.cache.domain.Entry;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import edu.sjsu.cmpe.cache.domain.Entry;
 
 public class InMemoryCache implements CacheInterface {
-    /**
-     * In-memory map cache. (Key, Value) -> (Key, Entry)
-     */
+    /** In-memory map cache. (Key, Value) -> (Key, Entry) */
     private final ConcurrentHashMap<Long, Entry> inMemoryMap;
 
     public InMemoryCache(ConcurrentHashMap<Long, Entry> entries) {
@@ -22,8 +20,7 @@ public class InMemoryCache implements CacheInterface {
     @Override
     public Entry save(Entry newEntry) {
         checkNotNull(newEntry, "newEntry instance must not be null");
-        inMemoryMap.putIfAbsent(newEntry.getKey(), newEntry);
-
+        inMemoryMap.put(newEntry.getKey(), newEntry);
         return newEntry;
     }
 
@@ -34,6 +31,12 @@ public class InMemoryCache implements CacheInterface {
         return inMemoryMap.get(key);
     }
 
+    @Override
+    public void delete(Long key) {
+        checkArgument(key > 0,
+                "Key was %s but expected greater than zero value", key);
+        inMemoryMap.remove(key);
+    }
     @Override
     public List<Entry> getAll() {
         return new ArrayList<Entry>(inMemoryMap.values());
